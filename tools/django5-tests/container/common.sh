@@ -17,7 +17,8 @@ if [ -d /dab/.git ]; then
   DAB_REV=$(git -C /dab rev-parse HEAD)
   sed -i -E "s|^(django-ansible-base[^@]*) @ .*|\1 @ git+file://localhost/dab@${DAB_REV}|" /tmp/req_git.txt
 fi
-grep -vE '^(pip|setuptools|setuptools-scm|setuptools_scm|wheel)[=<> ]' requirements/requirements.txt > /tmp/req.txt
+# setuptools/wheel come from requirements.txt so runtime-only APIs (e.g. pkg_resources) match the image
+grep -vE '^pip[=<> ]' requirements/requirements.txt > /tmp/req.txt
 grep -vE '^(pip|jupyter|ipython|tox|debugpy|sdb|remote-pdb)[=<> ]?' requirements/requirements_dev.txt > /tmp/req_dev.txt
 
 VENV=/venvs/$(cat /tmp/req.txt /tmp/req_dev.txt /tmp/req_git.txt | sha256sum | cut -c1-16)
@@ -25,11 +26,13 @@ if [ ! -e "$VENV/.done" ]; then
   echo "Creating venv $VENV" >&2
   rm -rf "$VENV"
   python3.11 -m venv "$VENV"
-  "$VENV/bin/pip" install -q -U 'pip<24.1' 'setuptools<70' wheel
+  "$VENV/bin/pip" install -q -U 'pip<24.1'
   "$VENV/bin/pip" install -q -r /tmp/req.txt
   "$VENV/bin/pip" install -q -r /tmp/req_dev.txt colorama
   "$VENV/bin/pip" install -q -r /tmp/req_git.txt
   touch "$VENV/.done"
 fi
+# Register AWX itself (entry points such as awx.credential_plugins), as the real image does
+"$VENV/bin/pip" install -q --no-deps --no-build-isolation -e /work 2>&1 | grep -v "^\[notice\]" >&2 || true
 export PATH="$VENV/bin:$PATH" PYTHONPATH=/work
 echo "venv: $VENV, Django $(python -c 'import django; print(django.get_version())')" >&2

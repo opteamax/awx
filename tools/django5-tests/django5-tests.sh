@@ -16,6 +16,7 @@
 #   upgrade-check REF    migrate a database with REF and store encrypted data, then migrate
 #                        and decrypt it with the working tree
 #   smoke                uwsgi + daphne smoke test (login, websocket, OAuth2, API)
+#   make-requirements    run the Makefile's requirements_awx target in a fresh venv (image build path)
 #   compile [ARGS]       pip-compile requirements.txt into the output dir (args go to pip-compile)
 #   services-down        stop the PostgreSQL and Redis containers
 #
@@ -107,6 +108,10 @@ case $CMD in
   smoke)
     source_dir; services_up; fresh_db awx_smoke
     run_in "$SRC" /tools/container/smoke.sh awx_smoke
+    ;;
+  make-requirements)
+    source_dir
+    run_in "$SRC" /tools/container/make-requirements.sh
     ;;
   compile)
     run_in "$REPO" /tools/container/compile.sh "$@"
