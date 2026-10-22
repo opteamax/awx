@@ -13,3 +13,4 @@ DATABASES = {
         'PORT': os.environ.get('PGPORT', '55432'),
     }
 }
+SECRET_KEY = 'pgcheck-fixed-secret-key-used-by-all-steps'

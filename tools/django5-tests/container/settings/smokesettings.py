@@ -11,3 +11,4 @@ CSRF_COOKIE_SECURE = False
 # Without /etc/tower/SECRET_KEY every process generates its own random key, which
 # breaks sessions and encrypted fields across uwsgi workers and daphne.
 SECRET_KEY = 'smoke-test-fixed-secret-key-shared-by-all-processes'
+BROADCAST_WEBSOCKET_SECRET = 'smoke-test-relay-secret'

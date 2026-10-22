@@ -13,7 +13,8 @@
 #   image                build the test image
 #   pytest [ARGS]        run the test suite (default: unit, functional, conf, sso)
 #   pgcheck              fresh migrate, makemigrations --check, DAB resource join on PostgreSQL
-#   upgrade-check REF    migrate a database with REF first, then with the working tree
+#   upgrade-check REF    migrate a database with REF and store encrypted data, then migrate
+#                        and decrypt it with the working tree
 #   smoke                uwsgi + daphne smoke test (login, websocket, OAuth2, API)
 #   compile [ARGS]       pip-compile requirements.txt into the output dir (args go to pip-compile)
 #   services-down        stop the PostgreSQL and Redis containers
@@ -99,9 +100,9 @@ case $CMD in
     services_up; fresh_db awx_upgrade
     worktree "$from"
     echo "### migrate with $from"
-    run_in "$WT" /tools/container/manage.sh awx_upgrade migrate showmigrations
+    run_in "$WT" /tools/container/manage.sh awx_upgrade migrate showmigrations seed-secrets
     echo "### migrate with working tree"
-    run_in "$REPO" /tools/container/manage.sh awx_upgrade migrate showmigrations makemigrations-check resource-join
+    run_in "$REPO" /tools/container/manage.sh awx_upgrade migrate showmigrations makemigrations-check resource-join verify-secrets
     ;;
   smoke)
     source_dir; services_up; fresh_db awx_smoke
