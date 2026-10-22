@@ -19,7 +19,7 @@ django-crum
 django-extensions
 django-guid>=3.5.0  # 3.5.0+ supports Django 5.x
 django-oauth-toolkit<2.0.0      # Version 2.0.0 has breaking changes that will need to be worked out before upgrading
-django-polymorphic
+django-polymorphic>=4.1.0  # 3.x breaks aggregate annotations (Count) on Django 5
 django-pglocks
 django-radius
 django-solo
