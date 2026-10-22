@@ -162,8 +162,6 @@ djangorestframework==3.15.1
     #   django-ansible-base
 djangorestframework-yaml==2.0.0
     # via -r requirements.in
-docutils==0.20.1
-    # via python-daemon
 ecdsa==0.19.2
     # via
     #   -r requirements.in
@@ -353,13 +351,13 @@ packaging==25.0
     #   opentelemetry-instrumentation
     #   setuptools-scm
     #   wheel
-pbr==6.0.0
+pbr==7.1.3
     # via -r requirements.in
 pexpect==4.7.0
     # via
     #   -r requirements.in
     #   ansible-runner
-pkgconfig==1.5.5
+pkgconfig==1.6.0
     # via -r requirements.in
 prometheus-client==0.20.0
     # via -r requirements.in
@@ -413,7 +411,7 @@ pyparsing==2.4.6
     # via -r requirements.in
 pyrad==2.4
     # via django-radius
-python-daemon==3.0.1
+python-daemon==3.1.2
     # via
     #   -r requirements.in
     #   ansible-runner
@@ -498,10 +496,12 @@ semantic-version==2.10.0
     # via setuptools-rust
 service-identity==26.1.0
     # via twisted
-setuptools-rust==1.8.1
+setuptools-rust==1.13.0
     # via -r requirements.in
-setuptools-scm[toml]==8.0.4
-    # via -r requirements.in
+setuptools-scm[toml]==9.2.2
+    # via
+    #   -r requirements.in
+    #   setuptools-scm
 six==1.16.0
     # via
     #   django-pglocks
@@ -562,7 +562,6 @@ typing-extensions==4.9.0
     #   pydantic
     #   pydantic-core
     #   pyopenssl
-    #   setuptools-scm
     #   twisted
 ujson==6.0.0
     # via autobahn
@@ -592,12 +591,12 @@ zope-interface==8.7
     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==21.2.4
+pip==26.2.2
     # via -r requirements.in
-setuptools==69.0.2
+setuptools==83.0.0
     # via
     #   -r requirements.in
     #   asciichartpy
-    #   python-daemon
+    #   pbr
     #   setuptools-rust
     #   setuptools-scm

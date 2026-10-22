@@ -49,7 +49,7 @@ psutil
 pygerduty
 pyopenssl>=26.0.0  # CVE-2026-27448, CVE-2026-27459; must match the cryptography pin above
 pyparsing==2.4.6  # Upgrading to v3 of pyparsing introduce errors on smart host filtering: Expected 'or' term, found 'or'  (at char 15), (line:1, col:16)
-python-daemon>3.0.0
+python-daemon>=3.1.2  # 3.0.x imports pkg_resources, removed in setuptools 82
 python-dsv-sdk>=1.0.4
 python-tss-sdk>=1.2.1
 python-ldap>=3.4.5  # CVE-2025-61911, CVE-2025-61912
@@ -68,15 +68,15 @@ twisted[tls]>=26.4.0  # CVE-2023-46137, CVE-2024-41671, CVE-2024-41810, CVE-2026
 uWSGI
 uwsgitop
 wheel>=0.46.2  # CVE-2022-40898, CVE-2026-24049
-pip==21.2.4  # see UPGRADE BLOCKERs
-setuptools  # see UPGRADE BLOCKERs
-setuptools_scm[toml]  # see UPGRADE BLOCKERs, xmlsec build dep
+pip==26.2.2  # see UPGRADE BLOCKERs; CVE-2023-5752, CVE-2025-8869 and 2026 pip CVEs
+setuptools>=83.0.0  # see UPGRADE BLOCKERs; CVE-2024-6345, CVE-2025-47273, CVE-2026-59890 (no pkg_resources since 82)
+setuptools_scm[toml]<10  # see UPGRADE BLOCKERs, xmlsec build dep
 setuptools-rust>=0.11.4  # cryptography build dep
 pkgconfig>=1.5.1  # xmlsec build dep - needed for offline build
 
 # Temporarily added to use ansible-runner from git branch, to be removed
 # when ansible-runner moves from requirements_git.txt to here
-pbr
+pbr>=7.0  # older pbr needs pkg_resources, removed in setuptools 82
 
 # Transitive dependencies pinned for security fixes
 azure-core>=1.38.0  # CVE-2026-21226

@@ -116,6 +116,11 @@ If modifying these libraries make sure testing with the offline build is perform
 Versions need to match the versions used in the pip bootstrapping step
 in the top-level Makefile.
 
+setuptools 82 removed `pkg_resources`. AWX itself uses `importlib.metadata`;
+python-daemon (>=3.1.2) and pbr (>=7) are pinned to versions that do not need it.
+`tools/django5-tests/django5-tests.sh make-requirements` runs the Makefile install
+path in a fresh venv.
+
 ### cryptography
 
 If modifying this library make sure testing with the offline build is performed to confirm it is functionally working.
