@@ -6,11 +6,11 @@ azure-identity
 azure-keyvault
 boto3
 botocore
-channels
+channels>=4.0  # channels 3.x uses django.utils.timezone.utc, removed in Django 5.0
 channels-redis
 cryptography>=41.0.7  # CVE-2023-49083
 Cython<3 # due to https://github.com/yaml/pyyaml/pull/702
-daphne
+daphne>=4.0  # required by channels 4
 distro
 django>=5.2.17,<5.3  # Django 5.2 LTS (opteamax fork), allow patch updates
 django-auth-ldap
