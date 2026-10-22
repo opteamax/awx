@@ -7,6 +7,7 @@ from collections import namedtuple
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import algorithms
 from django.utils.encoding import smart_str, smart_bytes
 
 
@@ -31,6 +32,8 @@ class Fernet256(Fernet):
         self._signing_key = key[:32]
         self._encryption_key = key[32:]
         self._backend = backend
+        # Required for compatibility with cryptography >= 50.0.0
+        self._aes = algorithms.AES(self._encryption_key)
 
 
 def get_encryption_key(field_name, pk=None, secret_key=None):
