@@ -10,9 +10,9 @@ from django.utils.functional import LazyObject
 from django.shortcuts import redirect
 
 # Python Social Auth
+from social_core.backends.utils import load_backends
 from social_core.exceptions import SocialAuthBaseException
 from social_core.utils import social_logger
-from social_django import utils
 from social_django.middleware import SocialAuthExceptionMiddleware
 
 
@@ -20,7 +20,7 @@ class SocialAuthMiddleware(SocialAuthExceptionMiddleware):
     def process_request(self, request):
         if request.path.startswith('/sso'):
             # See upgrade blocker note in requirements/README.md
-            utils.BACKENDS = settings.AUTHENTICATION_BACKENDS
+            load_backends(settings.AUTHENTICATION_BACKENDS, force_load=True)
         token_key = request.COOKIES.get('token', '')
         token_key = urllib.parse.quote(urllib.parse.unquote(token_key).strip('"'))
 

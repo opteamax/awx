@@ -103,6 +103,13 @@ configures Github OAuth2 integration), so we need to
 _overwrite_ this in-memory value at the top of every request so
 that we have the latest version
 
+Since social-auth-app-django 6 / social-auth-core 5 the backends are
+loaded from `AUTHENTICATION_BACKENDS` by social-core itself and cached in
+`social_core.backends.utils.BACKENDSCACHE`; `awx.sso.middleware` reloads
+that cache for `/sso` requests. social-core 5 also passes tuples of
+candidate attribute names to `SAMLIdentityProvider.get_attr()` and the
+backend as first argument to `SAMLIdentityProvider()`, see `awx.sso.backends`.
+
 ### django-oauth-toolkit
 
 Versions later than 1.4.1 throw an error about id_token_id, due to the

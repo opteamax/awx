@@ -272,12 +272,15 @@ class TowerSAMLIdentityProvider(BaseSAMLIdentityProvider):
             return uid
         return uid[0]
 
-    def get_attr(self, attributes, conf_key, default_attribute):
+    def get_attr(self, attributes, conf_key, default_attribute, **kwargs):
         """
         Get the attribute 'default_attribute' out of the attributes,
         unless self.conf[conf_key] overrides the default by specifying
         another attribute to use.
         """
+        if isinstance(default_attribute, (list, tuple)):
+            # social-auth-core >= 5 passes all candidate attribute names
+            default_attribute = next((name for name in default_attribute if name in attributes), default_attribute[0])
         key = self.conf.get(conf_key, default_attribute)
         value = attributes[key] if key in attributes else None
         # In certain implementations (like https://pagure.io/ipsilon) this value is a string, not a list
@@ -301,7 +304,7 @@ class SAMLAuth(BaseSAMLAuth):
 
     def get_idp(self, idp_name):
         idp_config = self.setting('ENABLED_IDPS')[idp_name]
-        return TowerSAMLIdentityProvider(idp_name, **idp_config)
+        return TowerSAMLIdentityProvider(self, idp_name, **idp_config)
 
     def authenticate(self, request, *args, **kwargs):
         if not all(

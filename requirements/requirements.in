@@ -56,8 +56,8 @@ python-ldap>=3.4.5  # CVE-2025-61911, CVE-2025-61912
 pyyaml>=6.0.1
 pyzstd  # otel collector log file compression library
 receptorctl
-social-auth-core[openidconnect]==4.4.2  # see UPGRADE BLOCKERs
-social-auth-app-django==5.4.0  # see UPGRADE BLOCKERs
+social-auth-core>=5.2.0,<6  # see UPGRADE BLOCKERs; CVE-2026-57175..57179, CVE-2026-62322; 5.x no longer needs python-jose
+social-auth-app-django>=6.1.0,<7  # see UPGRADE BLOCKERs; CVE-2024-32879, CVE-2025-61783
 sqlparse>=0.6.0   # Required by django; CVE-2026-54284, CVE-2026-59893, CVE-2026-59894, CVE-2026-71491, CVE-2026-84305
 redis[hiredis]
 requests>=2.33.0  # CVE-2024-35195, CVE-2024-47081, CVE-2026-25645
@@ -80,11 +80,9 @@ pbr>=7.0  # older pbr needs pkg_resources, removed in setuptools 82
 
 # Transitive dependencies pinned for security fixes
 azure-core>=1.38.0  # CVE-2026-21226
-ecdsa>=0.19.2  # CVE-2024-23342, CVE-2026-33936
 idna>=3.15  # CVE-2024-3651, CVE-2026-45409
 jwcrypto>=1.5.7  # CVE-2024-28102, CVE-2026-39373
 pyasn1>=0.6.4  # CVE-2026-30922, CVE-2026-59884, CVE-2026-59885, CVE-2026-59886
-python-jose>=3.4.0  # CVE-2024-33663, CVE-2024-33664
 zipp>=3.19.1  # CVE-2024-5569
 autobahn>=26.7.1  # CVE-2026-77528
 protobuf>=6.33.5,<7  # CVE-2025-4565, CVE-2026-0994; 6.x as on upstream devel

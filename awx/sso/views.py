@@ -6,8 +6,12 @@ import urllib.parse
 import logging
 
 # Django
+from django.core.exceptions import BadRequest
 from django.urls import reverse
 from django.http import HttpResponse
+from django.shortcuts import render
+from django.views.decorators.cache import never_cache
+from django.views.decorators.clickjacking import xframe_options_deny
 from django.views.generic import View
 from django.views.generic.base import RedirectView
 from django.utils.encoding import smart_str
@@ -66,3 +70,29 @@ class MetadataView(View):
 
 
 saml_metadata = MetadataView.as_view()
+
+
+@never_cache
+@xframe_options_deny
+def sso_launch(request, backend):
+    """
+    Start a social login from a plain link, as the UI renders them.
+
+    social-auth-app-django >= 6 only accepts POST with a CSRF token on social:begin
+    (login CSRF protection). Render a form with the token that submits itself, after
+    checking that the link was followed from this site.
+    """
+    from social_django.utils import apply_framing_protection, check_fetch_metadata, validate_app_launch_origin
+
+    is_valid_origin, origin_error = validate_app_launch_origin(request)
+    if not is_valid_origin:
+        logger.warning('sso_launch for %s rejected: %s', backend, origin_error)
+        raise BadRequest(origin_error)
+    auto_submit, _ = check_fetch_metadata(request, 'sso_launch')
+    params = {key: request.GET[key] for key in ('idp', 'next') if key in request.GET}
+    response = render(
+        request,
+        'social_django/launch.html',
+        {'action_url': reverse('social:begin', args=(backend,)), 'params': params, 'auto_submit': auto_submit},
+    )
+    return apply_framing_protection(response)

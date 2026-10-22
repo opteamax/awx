@@ -694,7 +694,8 @@ class AuthView(APIView):
         # Return auth backends in consistent order: Google, GitHub, SAML.
         auth_backends.sort(key=lambda x: 'g' if x[0] == 'google-oauth2' else x[0])
         for name, backend in auth_backends:
-            login_url = reverse('social:begin', args=(name,))
+            # social:begin only accepts POST; sso_launch turns the UI's links into that POST
+            login_url = reverse('sso:sso_launch', args=(name,))
             complete_url = request.build_absolute_uri(reverse('social:complete', args=(name,)))
             backend_data = {'login_url': login_url, 'complete_url': complete_url}
             if name == 'saml':
