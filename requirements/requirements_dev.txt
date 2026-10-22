@@ -1,6 +1,6 @@
 build
 coreapi
-django-debug-toolbar==3.2.4
+django-debug-toolbar>=6.0  # Django 5.2 compatibility
 django-test-migrations
 drf-yasg
 # pprofile - re-add once https://github.com/vpelletier/pprofile/issues/41 is addressed
