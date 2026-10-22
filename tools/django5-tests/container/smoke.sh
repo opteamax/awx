@@ -33,6 +33,7 @@ done
 echo "=== smoke checks"
 python /tools/container/smoke.py; rc=$?
 python /tools/container/relay_check.py || rc=1
+python /tools/container/sso_check.py || rc=1
 echo "=== tracebacks"
 for f in /var/log/tower/*.log /tmp/uwsgi.log /tmp/daphne.log; do
   grep -q Traceback "$f" && { echo "## $f"; grep -v "^\s*\^*\s*$" "$f" | grep -A40 -m3 Traceback; }
