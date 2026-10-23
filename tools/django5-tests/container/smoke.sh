@@ -38,4 +38,5 @@ echo "=== tracebacks"
 for f in /var/log/tower/*.log /tmp/uwsgi.log /tmp/daphne.log; do
   grep -q Traceback "$f" && { echo "## $f"; grep -v "^\s*\^*\s*$" "$f" | grep -A40 -m3 Traceback; }
 done | head -150
+mkdir -p /out/smoke-logs && cp /var/log/tower/*.log /tmp/uwsgi.log /tmp/daphne.log /out/smoke-logs/ 2>/dev/null
 exit $rc

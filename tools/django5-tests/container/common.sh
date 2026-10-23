@@ -19,15 +19,18 @@ if [ -d /dab/.git ]; then
 fi
 # setuptools/wheel come from requirements.txt so runtime-only APIs (e.g. pkg_resources) match the image
 grep -vE '^pip[=<> ]' requirements/requirements.txt > /tmp/req.txt
+grep -s '^SRC_ONLY_PKGS ?=' Makefile > /tmp/req.txt.key || true
 grep -vE '^(pip|jupyter|ipython|tox|debugpy|sdb|remote-pdb)[=<> ]?' requirements/requirements_dev.txt > /tmp/req_dev.txt
 
-VENV=/venvs/$(cat /tmp/req.txt /tmp/req_dev.txt /tmp/req_git.txt | sha256sum | cut -c1-16)
+VENV=/venvs/$(cat /tmp/req.txt /tmp/req.txt.key /tmp/req_dev.txt /tmp/req_git.txt 2>/dev/null | sha256sum | cut -c1-16)
 if [ ! -e "$VENV/.done" ]; then
   echo "Creating venv $VENV" >&2
   rm -rf "$VENV"
   python3.11 -m venv "$VENV"
   "$VENV/bin/pip" install -q -U 'pip<24.1'
-  "$VENV/bin/pip" install -q -r /tmp/req.txt
+  # Same source-only packages as the image build (e.g. lxml/xmlsec against the system libxml2)
+  SRC_ONLY=$(sed -n 's/^SRC_ONLY_PKGS ?= //p' Makefile)
+  "$VENV/bin/pip" install -q ${SRC_ONLY:+--no-binary "$SRC_ONLY"} -r /tmp/req.txt
   "$VENV/bin/pip" install -q -r /tmp/req_dev.txt colorama
   "$VENV/bin/pip" install -q -r /tmp/req_git.txt
   touch "$VENV/.done"

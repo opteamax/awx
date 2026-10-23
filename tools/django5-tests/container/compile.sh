@@ -14,5 +14,5 @@ python3.11 -m venv /tmp/pt && /tmp/pt/bin/pip install -q 'pip<24.1' 'pip-tools==
   --output-file requirements.txt requirements.in requirements_git.txt
 # drop entries that come from requirements_git.txt, as updater.sh does
 mkdir -p /out
-grep -vE '^(certifi|ansible-runner|python3-saml|django-ansible-base)(\[| @|==)' requirements.txt \
+grep -vE '^(certifi|ansible-runner|django-ansible-base)(\[| @|==)' requirements.txt \
   | grep -vE '^\s+# via -r requirements_git.txt$' > /out/requirements.txt
