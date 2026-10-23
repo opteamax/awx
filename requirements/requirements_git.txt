@@ -3,6 +3,5 @@
 git+https://github.com/ansible/system-certifi.git@5aa52ab91f9d579bfe52b5acf30ca799f1a563d9#egg=certifi
 # Remove pbr from requirements.in when moving ansible-runner to requirements.in
 git+https://github.com/ansible/ansible-runner.git@c3e8cdb24f784a70328f1bfb54eb9c886148acef#egg=ansible-runner
-git+https://github.com/ansible/python3-saml.git@f90824c4910e36c5a89dd295271be26691204ba3#egg=python3-saml
 # django-ansible-base as of AWX 24.6.1 (1213971) plus the Django 5.2 backport, see branch awx-24.6.1-django5
 django-ansible-base[rest_filters,jwt_consumer,resource_registry,rbac] @ git+https://github.com/opteamax/django-ansible-base@awx-24.6.1-django5

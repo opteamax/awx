@@ -88,3 +88,6 @@ autobahn>=26.7.1  # CVE-2026-77528
 protobuf>=6.33.5,<7  # CVE-2025-4565, CVE-2026-0994; 6.x as on upstream devel
 pyjwt>=2.15.0  # CVE-2026-32597 and 12 later CVEs fixed up to 2.15.0
 urllib3>=2.8.0  # CVE-2024-37891, CVE-2025-50181, CVE-2025-66418, CVE-2025-66471, CVE-2026-21441, CVE-2026-44431, CVE-2026-97687, CVE-2026-97689
+lxml>=6.1.0  # CVE-2026-41066
+python3-saml>=1.16.0  # replaces the ansible/python3-saml fork, which only relaxed lxml<4.10
+oauthlib>=4.0.0  # CVE-2026-49264, CVE-2026-49265

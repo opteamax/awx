@@ -30,6 +30,8 @@ RUN dnf -y update && dnf install -y 'dnf-command(config-manager)' && \
     glibc-langpack-en \
     libffi-devel \
     libtool-ltdl-devel \
+    libxml2-devel \
+    libxslt-devel \
     make \
 {% if not headless|bool %}
     nodejs \
