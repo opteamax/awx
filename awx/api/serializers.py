@@ -3202,6 +3202,15 @@ class CredentialInputSourceSerializer(BaseSerializer):
         fields = ('*', 'input_field_name', 'metadata', 'target_credential', 'source_credential', '-name')
         extra_kwargs = {'input_field_name': {'required': True}, 'target_credential': {'required': True}, 'source_credential': {'required': True}}
 
+    def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs):
+        # DRF >= 3.16 adds default=None for the nullable target_credential of the
+        # unique_together constraint, which conflicts with required=True above.
+        extra_kwargs, hidden_fields = super(CredentialInputSourceSerializer, self).get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
+        for kwargs in extra_kwargs.values():
+            if kwargs.get('required'):
+                kwargs.pop('default', None)
+        return extra_kwargs, hidden_fields
+
     def get_related(self, obj):
         res = super(CredentialInputSourceSerializer, self).get_related(obj)
         res['source_credential'] = obj.source_credential.get_absolute_url(request=self.context.get('request'))
