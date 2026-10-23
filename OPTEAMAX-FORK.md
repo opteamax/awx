@@ -6,7 +6,7 @@ login (`awx/sso`) and OAuth2 tokens, so it does not replace 24.6.1 for us.
 
 This fork keeps the AWX 24.6.1 feature set and brings its dependencies up to date:
 
-- **Django 5.2 LTS** instead of Django 4.2 (support for 4.2 ends April 2026)
+- **Django 5.2 LTS** instead of Django 4.2, whose security support ended in April 2026
 - **Dependency security upgrades**: a trivy scan of `requirements/requirements.txt` goes from
   217 known vulnerabilities (6 critical, 75 high) on 24.6.1 to 1 (medium, not reachable in
   AWX, see [Known remaining issues](#known-remaining-issues)), as of 2026-10-23
