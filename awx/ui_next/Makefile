@@ -8,6 +8,9 @@ UI_NEXT_LOCAL ?=
 ## Git repo and branch to the UI_NEXT repo
 UI_NEXT_GIT_REPO ?= https://github.com/ansible/ansible-ui.git
 UI_NEXT_GIT_BRANCH ?= main
+## Commit to check out after cloning; the ansible-ui main branch of the AWX 24.6.1 release
+## (2024-07-02). Current main needs Node >= 18, the image builds with Node 16.
+UI_NEXT_GIT_COMMIT ?= 298aac6d44ffc416113f5d9ff04b1b81e0a97a6f
 
 ## Product name to display on the UI used in UI_NEXT build process
 PRODUCT ?= AWX
@@ -70,10 +73,12 @@ $(UI_NEXT_DIR)/src:
 				echo "=== Cloning $(UI_NEXT_DIR)/src from $(UI_NEXT_GIT_BRANCH) of $(UI_NEXT_GIT_REPO) ==="; \
 				rm -rf $(UI_NEXT_DIR)/src; \
 				git clone --depth 1 --branch $(UI_NEXT_GIT_BRANCH) $(UI_NEXT_GIT_REPO) $(UI_NEXT_DIR)/src || true; \
+				if [ -n "$(UI_NEXT_GIT_COMMIT)" ]; then git -C $(UI_NEXT_DIR)/src fetch -q --depth 1 origin $(UI_NEXT_GIT_COMMIT) && git -C $(UI_NEXT_DIR)/src checkout -q FETCH_HEAD; fi; \
 			fi; \
 		else \
 			echo "=== Cloning $(UI_NEXT_DIR)/src from $(UI_NEXT_GIT_BRANCH) of $(UI_NEXT_GIT_REPO) ==="; \
 			git clone --depth 1 --branch $(UI_NEXT_GIT_BRANCH) $(UI_NEXT_GIT_REPO) $(UI_NEXT_DIR)/src || true; \
+				if [ -n "$(UI_NEXT_GIT_COMMIT)" ]; then git -C $(UI_NEXT_DIR)/src fetch -q --depth 1 origin $(UI_NEXT_GIT_COMMIT) && git -C $(UI_NEXT_DIR)/src checkout -q FETCH_HEAD; fi; \
 		fi; \
 	else \
 		echo "FAILED: ui-next/src. UI_NEXT_LOCAL and UI_NEXT_GIT_REPO are not set."; \

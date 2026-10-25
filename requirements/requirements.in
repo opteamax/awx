@@ -91,3 +91,4 @@ urllib3>=2.8.0  # CVE-2024-37891, CVE-2025-50181, CVE-2025-66418, CVE-2025-66471
 lxml>=6.1.0  # CVE-2026-41066
 python3-saml>=1.16.0  # replaces the ansible/python3-saml fork, which only relaxed lxml<4.10
 oauthlib>=4.0.0  # CVE-2026-49264, CVE-2026-49265
+xmlsec==1.3.13  # 1.3.14+ does not build against xmlsec1 1.2.29 of CentOS Stream 9 (xmlSecKeyDataFormatEngine undeclared)
