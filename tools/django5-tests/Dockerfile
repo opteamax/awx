@@ -4,3 +4,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libpq-dev libkrb5-dev git gcc g++ make swig rsync curl \
     && rm -rf /var/lib/apt/lists/*
 RUN git config --global --add safe.directory '*'
+RUN pip install --no-cache-dir requests websocket-client

@@ -17,6 +17,8 @@ $T pytest awx/main/tests/unit -x  # any pytest arguments
 $T pgcheck                        # PostgreSQL: fresh migrate, makemigrations --check, DAB join
 $T upgrade-check 24.6.1           # migrate a DB with 24.6.1, then with the working tree
 $T smoke                          # uwsgi + daphne: login/logout, websocket, OAuth2, API
+$T make-requirements              # Makefile install path in a fresh venv (quick, Debian)
+$T build-image                    # production image via make awx-kube-build (CentOS Stream 9)
 $T compile --upgrade-package foo==1.2   # recompile requirements.txt, other pins unchanged
 $T services-down                  # stop PostgreSQL/Redis containers
 
@@ -38,6 +40,25 @@ requirements, so changing a pin creates a fresh venv on the next run.
 
 All containers use `--network host` (PostgreSQL on port 55432, Redis on 56379), which also
 avoids bridge networking issues with TLS on some hosts.
+
+## End-to-end upgrade test with real jobs
+
+`compose-e2e/run-e2e.sh` reproduces the docker compose stack of
+[opteamax/ansible-awx-installer](https://github.com/opteamax/ansible-awx-installer) (web, task,
+receptor, postgres, redis; configuration rendered from `bootstrap_awx.py`), builds the
+installer's `Dockerfile.awx` on top of two AWX images and tests the upgrade between them:
+
+```bash
+$T build-image localhost/opteamax/awx:24.6.1-django5
+tools/django5-tests/compose-e2e/run-e2e.sh quay.io/ansible/awx:24.6.1 \
+    localhost/opteamax/awx:24.6.1-django5 ../ansible-awx-installer
+```
+
+Phase 1 sets up the old release the way the installer does and runs a git project sync
+(github.com/ansible/ansible-tower-samples), a job in the execution environment via receptor
+and podman, and an ad hoc command. Phase 2 switches to the new image, migrates, checks the old
+job and the encrypted credential, and runs the same jobs again. `--keep` leaves the stack up
+(port 18052, admin / e2e-admin-pass).
 
 ## Known baseline failures
 

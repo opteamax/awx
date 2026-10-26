@@ -16,7 +16,9 @@
 #   upgrade-check REF    migrate a database with REF and store encrypted data, then migrate
 #                        and decrypt it with the working tree
 #   smoke                uwsgi + daphne smoke test (login, websocket, OAuth2, API)
-#   make-requirements    run the Makefile's requirements_awx target in a fresh venv (image build path)
+#   make-requirements    run the Makefile's requirements_awx target in a fresh venv (quick, on Debian)
+#   build-image [TAG]    build the production image with make awx-kube-build (CentOS Stream 9),
+#                        default tag localhost/opteamax/awx:<branch>
 #   compile [ARGS]       pip-compile requirements.txt into the output dir (args go to pip-compile)
 #   services-down        stop the PostgreSQL and Redis containers
 #
@@ -112,6 +114,13 @@ case $CMD in
   make-requirements)
     source_dir
     run_in "$SRC" /tools/container/make-requirements.sh
+    ;;
+  build-image)
+    tag=${1:-localhost/opteamax/awx:$(git -C "$REPO" rev-parse --abbrev-ref HEAD | tr / -)}
+    (cd "$REPO" && make awx-kube-build VERSION="${VERSION:-24.6.1+opteamax}" IMAGE_KUBE="$tag" \
+      DOCKER_KUBE_CACHE_FLAG="--network host --progress plain") > "$OUT/image-build.log" 2>&1 \
+      || { grep -E "ERROR|error:" "$OUT/image-build.log" | tail -20; echo "build failed, see $OUT/image-build.log"; exit 1; }
+    echo "built $tag"
     ;;
   compile)
     run_in "$REPO" /tools/container/compile.sh "$@"
