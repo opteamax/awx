@@ -52,28 +52,47 @@ readable; `tools/django5-tests/django5-tests.sh upgrade-check 24.6.1` verifies t
 
 ## Building
 
-The image build is unchanged (`make awx-kube-build` etc.), with these differences:
+`make awx-kube-build` (or `tools/django5-tests/django5-tests.sh build-image`) builds the
+production image. Unmodified 24.6.1 no longer builds today; the fork fixes that and differs in:
 
+- OpenSSL is no longer pinned to 3.0.7, which CentOS Stream 9 has dropped (upstream fix)
+- `ui_next` is built from the ansible-ui commit of the 24.6.1 release (`UI_NEXT_GIT_COMMIT`);
+  ansible-ui `main` now needs Node >= 18 while the image builds with Node 16
 - pip 26.2, setuptools 83 (no `pkg_resources` any more), Cython 3
 - `lxml` and `xmlsec` are built from source against the system libxml2 (`SRC_ONLY_PKGS` in the
   Makefile). uwsgi links the system libxml2; the libxml2 bundled in the lxml/xmlsec wheels
-  would make xmlsec refuse to work in the web process.
+  would make xmlsec refuse to work in the web process. xmlsec stays at 1.3.13, newer versions
+  do not compile against xmlsec1 1.2.29 of CentOS Stream 9.
 - `requirements/requirements_git.txt` pulls django-ansible-base from the opteamax fork.
+
+For [ansible-awx-installer](https://github.com/opteamax/ansible-awx-installer) the base image
+must be configurable; branch `feature/awx-image-repo` adds the option "AWX image repository".
 
 ## Testing
 
-`tools/django5-tests/` runs the test suite, PostgreSQL migration and upgrade checks, the
-Makefile install path and a smoke test against uwsgi/daphne (login, websocket, wsrelay, OAuth2,
-SSO including a full SAML login) in a `python:3.11` container. Every check can also run
-against the unmodified release to tell regressions from existing failures. See its
-[README](tools/django5-tests/README.md).
+`tools/django5-tests/` (see its [README](tools/django5-tests/README.md)) runs in containers:
 
-Not covered: running jobs (dispatcher, receptor, execution environments), real LDAP/RADIUS/
-TACACS+ servers (only unit tests), the UI build, the awx-operator.
+- the Python test suite, PostgreSQL migration and upgrade checks, the Makefile install path
+- a smoke test against uwsgi/daphne: login, websocket, wsrelay, OAuth2, SSO including a full
+  SAML login
+- `compose-e2e/run-e2e.sh`: the installer's docker compose stack, upgraded from
+  `quay.io/ansible/awx:24.6.1` to the fork image (both with the installer's `Dockerfile.awx`):
+  git project sync, a playbook run in the execution environment via receptor and podman, an
+  ad hoc command, old jobs and credentials after the upgrade, and a browser check of the UI
+
+Every check can also run against the unmodified release to tell regressions from existing
+failures. The classic UI unit tests (2830) pass as on 24.6.1.
+
+Not covered: real LDAP/RADIUS/TACACS+ servers (unit tests only), Kubernetes/awx-operator
+deployments.
 
 ## Known remaining issues
 
 - `twisted` CVE-2026-106454: DoS in the IMAP server of `twisted.mail`, no fixed version yet.
   AWX does not use `twisted.mail`.
-- Dependencies not managed by `requirements.txt` are not covered by the scan: the UI
-  (`awx/ui`, Node.js packages), the base image packages, ansible-core in execution environments.
+- UI: the dependencies shipped to the browser have no known vulnerabilities (npm audit); the
+  build tooling (react-scripts 5, webpack, ...) still has known issues and would need a
+  larger migration. It does not end up in the image's runtime.
+- Not scanned: packages of the CentOS Stream 9 base image, the execution environment image
+  (`quay.io/ansible/awx-ee`), and what the installer's `Dockerfile.awx` adds (it installs
+  ansible-core 2.16, which is end of life).
