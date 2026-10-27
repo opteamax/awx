@@ -18,6 +18,8 @@ cd "$HERE"
 compose() { docker compose -f "$HERE/docker-compose.yml" "$@"; }
 web() { docker exec awx_e2e_web "$@"; }
 e2e() { docker run --rm --network host -v "$HERE:/e2e:ro" -v "$STATE:/state" "$TOOLS_IMAGE" python /e2e/e2e.py "$1" /state/state.json; }
+PLAYWRIGHT_IMAGE=awx-e2e-playwright
+ui() { docker run --rm --network host --ipc host -v "$HERE:/e2e:ro" -v "$STATE:/state" "$PLAYWRIGHT_IMAGE" python /e2e/ui_check.py /state/state.json; }
 
 wait_web() {
   for _ in $(seq 120); do
@@ -76,6 +78,7 @@ collect_logs() {
 trap '[ "$KEEP" = --keep ] || compose down -v >/dev/null 2>&1; echo "state and logs: $STATE"' EXIT
 export COMPOSE_PROGRESS=quiet
 
+docker build --network host -q -f "$HERE/ui.Dockerfile" -t "$PLAYWRIGHT_IMAGE" "$HERE" >/dev/null
 build "$OLD" awx-e2e-podman:old
 build "$NEW" awx-e2e-podman:new
 compose down -v >/dev/null 2>&1 || true
@@ -89,6 +92,7 @@ ensure_queues
 rc=0
 e2e seed || rc=1
 check_decrypt || rc=1
+ui || rc=1
 collect_logs old
 
 echo "### phase 2: $NEW"
@@ -100,5 +104,6 @@ echo "unapplied migrations: $(web awx-manage showmigrations --plan | grep -c '\[
 ensure_queues
 e2e verify || rc=1
 check_decrypt || rc=1
+ui || rc=1
 collect_logs new
 exit $rc
