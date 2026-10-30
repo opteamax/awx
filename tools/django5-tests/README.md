@@ -58,7 +58,11 @@ Phase 1 sets up the old release the way the installer does and runs a git projec
 (github.com/ansible/ansible-tower-samples), a job in the execution environment via receptor
 and podman, and an ad hoc command, plus a browser check of the classic UI (Playwright/Chromium:
 login, job list, job output, logout, no JavaScript errors). Phase 2 switches to the new image, migrates, checks the old
-job and the encrypted credential, and runs the same jobs and UI checks again. `--keep` leaves the stack up
+job and the encrypted credential, and runs the same jobs and UI checks again.
+
+Both phases also check external logging: the compose profile `logging` adds an rsyslog sidecar
+(as the awx-operator runs it; the installer stack has none) and an HTTP receiver, and the test
+verifies the rsyslog configuration with omhttp, delivery of a test message and of job events. `--keep` leaves the stack up
 (port 18052, admin / e2e-admin-pass).
 
 ## Known baseline failures

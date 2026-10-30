@@ -35,6 +35,9 @@ services:
             - ./config/awx_settings.py:/etc/tower/settings.py:ro
             - ./config/awx_nginx.conf:/etc/nginx/conf.d/awx.conf:ro
             - awx_private:/awxdata
+            # only used with the "logging" profile (rsyslog sidecar as with the awx-operator)
+            - rsyslog_sock:/var/run/awx-rsyslog
+            - rsyslog_conf:/var/lib/awx/rsyslog
 
     awx_task:
         image: ${AWX_IMAGE:-awx-e2e-podman:new}
@@ -75,6 +78,39 @@ services:
             - ./config/receptor.conf:/etc/receptor/receptor.conf:ro
             - awx_private:/awxdata
 
+    # Profile "logging": rsyslog sidecar (not part of the installer stack) and an HTTP log receiver
+    awx_rsyslog:
+        profiles: [logging]
+        image: ${AWX_IMAGE:-awx-e2e-podman:new}
+        container_name: awx_e2e_rsyslog
+        user: "0"
+        command: /usr/bin/launch_awx_rsyslog.sh
+        env_file:
+            - ./awx.env
+        environment:
+            # as set by the awx-operator, so the configurer can restart rsyslogd
+            - SUPERVISOR_CONFIG_PATH=/etc/supervisord_rsyslog.conf
+            - DATABASE_HOST=postgres
+            - DATABASE_NAME=awx
+            - DATABASE_USER=awx
+            - DATABASE_PORT=5432
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+        volumes:
+            - ./config/awx_settings.py:/etc/tower/settings.py:ro
+            - rsyslog_sock:/var/run/awx-rsyslog
+            - rsyslog_conf:/var/lib/awx/rsyslog
+
+    log_listener:
+        profiles: [logging]
+        image: python:3.11-alpine
+        container_name: awx_e2e_log_listener
+        ports:
+            - "127.0.0.1:18090:8090"
+        volumes:
+            - ./log_listener.py:/log_listener.py:ro
+        command: python -u /log_listener.py
+
     redis:
         image: redis:7-alpine
         container_name: awx_e2e_redis
@@ -99,3 +135,5 @@ volumes:
     receptor_sock:
     awx_private:
     postgres:
+    rsyslog_sock:
+    rsyslog_conf:

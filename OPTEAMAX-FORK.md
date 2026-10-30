@@ -55,6 +55,10 @@ readable; `tools/django5-tests/django5-tests.sh upgrade-check 24.6.1` verifies t
 `make awx-kube-build` (or `tools/django5-tests/django5-tests.sh build-image`) builds the
 production image. Unmodified 24.6.1 no longer builds today; the fork fixes that and differs in:
 
+- **AlmaLinux 9** instead of CentOS Stream 9 as base image (RHEL 9 compatible, supported until
+  2032). Stream is a preview of the next RHEL minor release and has no advisory data for
+  vulnerability scanners; on AlmaLinux trivy reports no vulnerable OS packages. rsyslog comes from
+  AppStream (8.2510, with omhttp) instead of a 2021 build from the ansible/Rsyslog copr.
 - OpenSSL is no longer pinned to 3.0.7, which CentOS Stream 9 has dropped (upstream fix)
 - `ui_next` is built from the ansible-ui commit of the 24.6.1 release (`UI_NEXT_GIT_COMMIT`);
   ansible-ui `main` now needs Node >= 18 while the image builds with Node 16
@@ -67,6 +71,12 @@ production image. Unmodified 24.6.1 no longer builds today; the fork fixes that 
 
 For [ansible-awx-installer](https://github.com/opteamax/ansible-awx-installer) the base image
 must be configurable; branch `feature/awx-image-repo` adds the option "AWX image repository".
+Its `Dockerfile.awx` (dnf, podman) works unchanged on the AlmaLinux image.
+
+The installer's compose stack starts no rsyslog process (the awx-operator runs it as a separate
+container), so AWX's external logging settings (Splunk, Loki, ...) have no effect there. The
+e2e test runs such a sidecar (`--profile logging`, `SUPERVISOR_CONFIG_PATH` as with the
+operator) and checks delivery through omhttp.
 
 ## Testing
 
@@ -93,6 +103,11 @@ deployments.
 - UI: the dependencies shipped to the browser have no known vulnerabilities (npm audit); the
   build tooling (react-scripts 5, webpack, ...) still has known issues and would need a
   larger migration. It does not end up in the image's runtime.
-- Not scanned: packages of the CentOS Stream 9 base image, the execution environment image
-  (`quay.io/ansible/awx-ee`), and what the installer's `Dockerfile.awx` adds (it installs
-  ansible-core 2.16, which is end of life).
+- pip 26.2.2 carries its own copies of urllib3 2.7.0 and msgpack 1.1.2 (`pip/_vendor`); scanners
+  report them. They are only used by pip itself and are fixed with the next pip release.
+- New advisories keep appearing: an image scan on 2026-10-29 reported further Python findings
+  (djangorestframework, gitpython, filelock, social-auth-core, setuptools) published after
+  the dependency round of 2026-10-23. Some fixes need major upgrades (filelock 4,
+  social-auth-core 6). Scan regularly, e.g. trivy on the built image.
+- Not scanned: the execution environment image (`quay.io/ansible/awx-ee`) and what the
+  installer's `Dockerfile.awx` adds (it installs ansible-core 2.16, which is end of life).

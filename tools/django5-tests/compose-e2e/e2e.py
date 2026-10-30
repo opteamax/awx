@@ -62,6 +62,11 @@ def sync_project(project):
 def run_job(template):
     job = api('POST', f"/job_templates/{template['id']}/launch/")
     result = wait(f"/jobs/{job['id']}/")
+    # The job status is final before the callback receiver has stored all events
+    deadline = time.time() + 120
+    while not result.get('event_processing_finished') and time.time() < deadline:
+        time.sleep(2)
+        result = api('GET', f"/jobs/{job['id']}/")
     out = stdout(f"/jobs/{job['id']}/")
     check('job run in execution environment', result['status'] == 'successful', f"{result['status']} {result.get('job_explanation', '')[:200]}")
     check('job output contains playbook result', 'Hello World!' in out, out[-200:].replace('\n', ' ') if 'Hello World!' not in out else '')
@@ -117,7 +122,48 @@ def verify(state_file):
     run_adhoc(api('GET', f"/inventories/{state['inventory']}/"), state['credential'])
 
 
+def wait_for_log(text, timeout=120):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        received = requests.get('http://127.0.0.1:18090/received', timeout=10).json()
+        if any(text in body for body in received):
+            return True
+        time.sleep(3)
+    return False
+
+
+def logging_check(state_file):
+    """External logging through rsyslog/omhttp (needs the compose profile "logging")."""
+    state = json.load(open(state_file))
+    api('PATCH', '/settings/logging/', json={
+        'LOG_AGGREGATOR_HOST': 'http://log_listener', 'LOG_AGGREGATOR_PORT': 8090, 'LOG_AGGREGATOR_TYPE': 'other',
+        'LOG_AGGREGATOR_PROTOCOL': 'https', 'LOG_AGGREGATOR_VERIFY_CERT': False, 'LOG_AGGREGATOR_LEVEL': 'INFO',
+        'LOG_AGGREGATOR_LOGGERS': ['awx', 'activity_stream', 'job_events', 'system_tracking'], 'LOG_AGGREGATOR_ENABLED': True})
+    # rsyslog is reconfigured asynchronously after the settings change
+    deadline, r = time.time() + 120, None
+    while time.time() < deadline:
+        r = requests.post(f'{API}/settings/logging/test/', headers=AUTH, timeout=60)
+        if r.status_code == 202:
+            break
+        time.sleep(5)
+    check('logging test endpoint (rsyslog config with omhttp)', r.status_code == 202, f'{r.status_code} {r.text[:200]}')
+    # Each call sends one test message; messages sent before rsyslogd has restarted with the
+    # new configuration are lost, so repeat until one arrives.
+    delivered = False
+    for _ in range(12):
+        requests.post(f'{API}/settings/logging/test/', headers=AUTH, timeout=60)
+        if wait_for_log('AWX Connection Test Message', timeout=10):
+            delivered = True
+            break
+    check('test message delivered via rsyslog/omhttp', delivered)
+    # The callback receiver picks up LOG_AGGREGATOR_ENABLED only after its settings cache expires
+    time.sleep(60)
+    run_job(api('GET', f"/job_templates/{state['template']}/"))
+    check('job events forwarded to the log receiver', wait_for_log('Hello World'))
+    api('PATCH', '/settings/logging/', json={'LOG_AGGREGATOR_ENABLED': False})
+
+
 if __name__ == '__main__':
-    {'seed': seed, 'verify': verify}[sys.argv[1]](sys.argv[2])
+    {'seed': seed, 'verify': verify, 'logging': logging_check}[sys.argv[1]](sys.argv[2])
     print(f'\n{sum(results)}/{len(results)} e2e checks passed')
     sys.exit(0 if all(results) else 1)

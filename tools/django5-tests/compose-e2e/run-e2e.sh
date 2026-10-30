@@ -72,11 +72,13 @@ ensure_queues() {
 
 collect_logs() {
   mkdir -p "$STATE/logs"
-  for c in awx_e2e_web awx_e2e_task awx_e2e_receptor; do docker logs "$c" > "$STATE/logs/$1-$c.log" 2>&1 || true; done
+  for c in awx_e2e_web awx_e2e_task awx_e2e_receptor awx_e2e_rsyslog; do docker logs "$c" > "$STATE/logs/$1-$c.log" 2>&1 || true; done
 }
 
 trap '[ "$KEEP" = --keep ] || compose down -v >/dev/null 2>&1; echo "state and logs: $STATE"' EXIT
 export COMPOSE_PROGRESS=quiet
+# rsyslog sidecar and log receiver for the external logging check
+export COMPOSE_PROFILES=logging
 
 docker build --network host -q -f "$HERE/ui.Dockerfile" -t "$PLAYWRIGHT_IMAGE" "$HERE" >/dev/null
 build "$OLD" awx-e2e-podman:old
@@ -87,12 +89,13 @@ echo "### phase 1: $OLD"
 export AWX_IMAGE=awx-e2e-podman:old
 compose up -d postgres redis receptor awx_web
 bootstrap || { collect_logs old; exit 1; }
-compose up -d awx_task
+compose up -d
 ensure_queues
 rc=0
 e2e seed || rc=1
 check_decrypt || rc=1
 ui || rc=1
+e2e logging || rc=1
 collect_logs old
 
 echo "### phase 2: $NEW"
@@ -105,5 +108,6 @@ ensure_queues
 e2e verify || rc=1
 check_decrypt || rc=1
 ui || rc=1
+e2e logging || rc=1
 collect_logs new
 exit $rc
