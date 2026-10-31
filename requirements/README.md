@@ -110,6 +110,18 @@ that cache for `/sso` requests. social-core 5 also passes tuples of
 candidate attribute names to `SAMLIdentityProvider.get_attr()` and the
 backend as first argument to `SAMLIdentityProvider()`, see `awx.sso.backends`.
 
+social-auth-core 6 / social-auth-app-django 7: `str()` of a social-core exception is a generic
+text for its error code (details are in `.detail`); AWX's own pipeline exceptions override
+`__str__` and keep their messages. `awx.sso.middleware` overrides `process_exception`, so the
+new error page of social-app-django is not used. Pipeline steps no longer get `request`;
+AWX's do not use it.
+
+### djangorestframework
+
+DRF 3.18 reports errors of `many=True` serializers as a dict keyed by index. AWX sets
+`LIST_SERIALIZER_ERRORS_AS_DICT = False` to keep the 24.6.1 format; DRF removes that setting
+in 3.20.
+
 ### django-oauth-toolkit
 
 Versions later than 1.4.1 throw an error about id_token_id, due to the

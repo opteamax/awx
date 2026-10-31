@@ -3,6 +3,7 @@
 Configures GitHub OAuth2 and a SAML SP/IdP through the settings API, then checks the
 login redirects, the backend listing and the SAML SP metadata (lxml/xmlsec/python3-saml).
 """
+import ast
 import base64
 import datetime
 import sys
@@ -159,6 +160,30 @@ check('POST /sso/complete/saml/ with signed response logs in', r.status_code == 
 r = session.get(f'{API}/api/v2/me/')
 me = r.json()['results'][0] if r.status_code == 200 else {}
 check('SAML user created with mapped attributes', me.get('username') == 'smokesaml' and me.get('email') == 'smokesaml@example.com', {k: me.get(k) for k in ('username', 'email')})
+
+
+def social_rows(blank_id_key=False):
+    """The saml UserSocialAuth rows as (user id, uid, id_key); optionally blank id_key first."""
+    import subprocess
+
+    code = (
+        'import django; django.setup()\n'
+        'from social_django.models import UserSocialAuth as S\n'
+        f'{blank_id_key} and S.objects.filter(provider="saml").update(id_key="")\n'
+        'print(sorted(S.objects.filter(provider="saml").values_list("user_id", "uid", "id_key")))'
+    )
+    return subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, check=True).stdout.strip()
+
+
+# Associations made before social-auth-app-django 7 have no id_key, and migration 0020
+# does not backfill one for saml: the next login must find the same user again.
+before = social_rows(blank_id_key=True)
+session, r = saml_login()
+r = session.get(f'{API}/api/v2/me/')
+again = r.json()['results'][0] if r.status_code == 200 else {}
+after = social_rows()
+check('SAML login with a pre-upgrade association (empty id_key) keeps the user',
+      again.get('id') == me.get('id') and len(ast.literal_eval(after)) == 1, f'{before} -> {after}, user {again.get("id")} vs {me.get("id")}')
 
 session, r = saml_login(tamper_request_id=True)
 r = session.get(f'{API}/api/v2/me/')

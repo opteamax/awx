@@ -157,7 +157,7 @@ django-split-settings==1.0.0
     # via
     #   -r requirements.in
     #   django-ansible-base
-djangorestframework==3.17.2
+djangorestframework==3.18.3
     # via
     #   -r requirements.in
     #   django-ansible-base
@@ -165,7 +165,7 @@ djangorestframework-yaml==2.0.0
     # via -r requirements.in
 enum-compat==0.0.3
     # via asn1
-filelock==3.32.7
+filelock==4.2.5
     # via -r requirements.in
 frozenlist==1.8.0
     # via
@@ -173,7 +173,7 @@ frozenlist==1.8.0
     #   aiosignal
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.62
+gitpython==3.2.1
     # via -r requirements.in
 google-auth==2.28.1
     # via kubernetes
@@ -375,7 +375,7 @@ psycopg==3.1.18
     # via -r requirements.in
 ptyprocess==0.7.0
     # via pexpect
-pyasn1==0.6.4
+pyasn1==0.6.5
     # via
     #   -r requirements.in
     #   pyasn1-modules
@@ -510,9 +510,9 @@ slack-sdk==3.27.0
     # via -r requirements.in
 smmap==5.0.1
     # via gitdb
-social-auth-app-django==6.1.0
+social-auth-app-django==7.2.0
     # via -r requirements.in
-social-auth-core==5.2.0
+social-auth-core==6.2.0
     # via
     #   -r requirements.in
     #   social-auth-app-django
@@ -528,13 +528,13 @@ tempora==5.5.1
     #   jaraco-logging
 twilio==8.13.0
     # via -r requirements.in
-twisted[tls]==26.4.0
+twisted[tls]==26.10.0
     # via
     #   -r requirements.in
     #   daphne
 txaio==26.6.1
     # via autobahn
-typing-extensions==4.9.0
+typing-extensions==4.16.0
     # via
     #   aiohttp
     #   aiosignal
@@ -587,7 +587,7 @@ zope-interface==8.7
 # The following packages are considered to be unsafe in a requirements file:
 pip==26.2.2
     # via -r requirements.in
-setuptools==83.0.0
+setuptools==84.2.1
     # via
     #   -r requirements.in
     #   asciichartpy

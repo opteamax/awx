@@ -383,6 +383,9 @@ REST_FRAMEWORK = {
     # For swagger schema generation
     # see https://github.com/encode/django-rest-framework/pull/6532
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.AutoSchema',
+    # DRF 3.18 reports errors of many=True serializers as a dict keyed by index;
+    # keep the list format of AWX 24.6.1 that API clients and the UI expect
+    'LIST_SERIALIZER_ERRORS_AS_DICT': False,
     # 'URL_FORMAT_OVERRIDE': None,
 }
 

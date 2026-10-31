@@ -17,7 +17,7 @@
 #                        and decrypt it with the working tree
 #   smoke                uwsgi + daphne smoke test (login, websocket, OAuth2, API)
 #   make-requirements    run the Makefile's requirements_awx target in a fresh venv (quick, on Debian)
-#   build-image [TAG]    build the production image with make awx-kube-build (CentOS Stream 9),
+#   build-image [TAG]    build the production image with make awx-kube-build (AlmaLinux 9),
 #                        default tag localhost/opteamax/awx:<branch>
 #   compile [ARGS]       pip-compile requirements.txt into the output dir (args go to pip-compile)
 #   services-down        stop the PostgreSQL and Redis containers

@@ -76,7 +76,7 @@ RECEPTOR_IMAGE ?= quay.io/ansible/receptor:devel
 SRC_ONLY_PKGS ?= cffi,pycparser,psycopg,twilio,lxml,xmlsec
 # These should be upgraded in the AWX and Ansible venv before attempting
 # to install the actual requirements
-VENV_BOOTSTRAP ?= pip==26.2.2 setuptools==83.0.0 setuptools_scm[toml]==9.2.2 wheel==0.46.3 cython==3.3.0
+VENV_BOOTSTRAP ?= pip==26.2.2 setuptools==84.2.1 setuptools_scm[toml]==9.2.2 wheel==0.46.3 cython==3.3.0
 
 NAME ?= awx
 
