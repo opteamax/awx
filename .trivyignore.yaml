@@ -1,0 +1,28 @@
+# Accepted findings for the image scan in .github/workflows/opteamax-image.yml.
+# Every entry names the exact package version (purl) and expires, so a newer
+# version or a forgotten entry shows up in the scan again.
+vulnerabilities:
+  # pip 26.2.2 (the latest release) vendors these in pip/_vendor; they are only
+  # used by pip itself, which runs at build time (the installer's Dockerfile.awx
+  # installs ansible-core with it). The venv has the fixed versions:
+  # urllib3 2.8.0, msgpack 1.2.3, setuptools 84.2.1.
+  - id: CVE-2026-97687
+    purls: ["pkg:pypi/urllib3@2.7.0"]
+    statement: vendored in pip 26.2.2, used by pip only
+    expired_at: 2027-01-31
+  - id: CVE-2026-97689
+    purls: ["pkg:pypi/urllib3@2.7.0"]
+    statement: vendored in pip 26.2.2, used by pip only
+    expired_at: 2027-01-31
+  - id: CVE-2026-114613
+    purls: ["pkg:pypi/msgpack@1.1.2"]
+    statement: vendored in pip 26.2.2 (cachecontrol), used by pip only
+    expired_at: 2027-01-31
+  - id: GHSA-6v7p-g79w-8964
+    purls: ["pkg:pypi/msgpack@1.1.2"]
+    statement: vendored in pip 26.2.2 (cachecontrol), used by pip only
+    expired_at: 2027-01-31
+  - id: CVE-2025-47273
+    purls: ["pkg:pypi/setuptools@70.3.0"]
+    statement: pip 26.2.2 vendors only pkg_resources of setuptools 70.3.0; the vulnerable PackageIndex is not part of it
+    expired_at: 2027-01-31

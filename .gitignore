@@ -177,3 +177,9 @@ _readthedocs/
 
 # Pyenv
 .python-version
+
+# Site-specific notes, configuration and the deny list of internal names
+# (see the pre-commit hook in .git/hooks); never published
+/local/
+*.local
+.infra-denylist

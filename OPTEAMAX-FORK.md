@@ -8,8 +8,8 @@ This fork keeps the AWX 24.6.1 feature set and brings its dependencies up to dat
 
 - **Django 5.2 LTS** instead of Django 4.2, whose security support ended in April 2026
 - **Dependency security upgrades**: a trivy scan of `requirements/requirements.txt` goes from
-  217 known vulnerabilities (6 critical, 75 high) on 24.6.1 to 1 (medium, not reachable in
-  AWX, see [Known remaining issues](#known-remaining-issues)), as of 2026-10-23
+  217 known vulnerabilities (6 critical, 75 high) on 24.6.1 to none (as of 2026-10-31; see
+  [Known remaining issues](#known-remaining-issues) for the image)
 
 Branch: `django5/24.6.1`, based on the `24.6.1` tag. Where upstream `devel` already contains a
 fix, it is cherry-picked (the commit message names the upstream commit).
@@ -26,7 +26,7 @@ were current at the 24.6.1 release.
 ## Upgrading an existing AWX 24.6.1 installation
 
 The database schema of AWX itself is unchanged (still 249 migrations from 24.6.1).
-`social_django` adds two migrations:
+`social_django` adds seven migrations:
 
 - `0016_alter_usersocialauth_extra_data`: metadata only
 - `0017_usersocialauth_user_social_auth_uid_required`: adds a check constraint
@@ -35,6 +35,11 @@ The database schema of AWX itself is unchanged (still 249 migrations from 24.6.1
   ```sql
   SELECT id, provider, user_id FROM social_auth_usersocialauth WHERE uid = '';
   ```
+
+- `0018`-`0022` (social-auth-app-django 7): a new `id_key` column, filled in for the providers
+  social-core knows (GitHub, Google, Azure AD, OIDC); OpenID nonces get a lifetime and an
+  index. SAML associations keep an empty `id_key` and are found again on the next login (the
+  smoke test checks this).
 
 Encrypted data (credentials, settings, OAuth2 application secrets) written by 24.6.1 stays
 readable; `tools/django5-tests/django5-tests.sh upgrade-check 24.6.1` verifies this.
@@ -49,6 +54,11 @@ readable; `tools/django5-tests/django5-tests.sh upgrade-check 24.6.1` verifies t
 - **SAML**: responses must answer the AuthnRequest AWX sent (`InResponseTo` is validated).
   IdP-initiated logins without `InResponseTo` still work.
 - **Logout** keeps accepting GET, as the 24.6.1 UI uses it (Django 5 allows only POST by default).
+- **SSO error messages**: social-auth-core 6 reports its own failures with generic texts
+  ("Authentication could not be completed.") instead of provider details. AWX's own messages
+  (account not found, account inactive) are unchanged.
+- **API validation errors** of list serializers keep the 24.6.1 list format
+  (`LIST_SERIALIZER_ERRORS_AS_DICT = False`; DRF 3.18 changed the default to a dict).
 
 ## Building
 
@@ -62,7 +72,7 @@ production image. Unmodified 24.6.1 no longer builds today; the fork fixes that 
 - OpenSSL is no longer pinned to 3.0.7, which CentOS Stream 9 has dropped (upstream fix)
 - `ui_next` is built from the ansible-ui commit of the 24.6.1 release (`UI_NEXT_GIT_COMMIT`);
   ansible-ui `main` now needs Node >= 18 while the image builds with Node 16
-- pip 26.2, setuptools 83 (no `pkg_resources` any more), Cython 3
+- pip 26.2, setuptools 84 (no `pkg_resources` any more), Cython 3
 - `lxml` and `xmlsec` are built from source against the system libxml2 (`SRC_ONLY_PKGS` in the
   Makefile). uwsgi links the system libxml2; the libxml2 bundled in the lxml/xmlsec wheels
   would make xmlsec refuse to work in the web process. xmlsec stays at 1.3.13, newer versions
@@ -98,16 +108,15 @@ deployments.
 
 ## Known remaining issues
 
-- `twisted` CVE-2026-106454: DoS in the IMAP server of `twisted.mail`, no fixed version yet.
-  AWX does not use `twisted.mail`.
 - UI: the dependencies shipped to the browser have no known vulnerabilities (npm audit); the
   build tooling (react-scripts 5, webpack, ...) still has known issues and would need a
   larger migration. It does not end up in the image's runtime.
-- pip 26.2.2 carries its own copies of urllib3 2.7.0 and msgpack 1.1.2 (`pip/_vendor`); scanners
-  report them. They are only used by pip itself and are fixed with the next pip release.
-- New advisories keep appearing: an image scan on 2026-10-29 reported further Python findings
-  (djangorestframework, gitpython, filelock, social-auth-core, setuptools) published after
-  the dependency round of 2026-10-23. Some fixes need major upgrades (filelock 4,
-  social-auth-core 6). Scan regularly, e.g. trivy on the built image.
+- pip 26.2.2 (the latest release) carries its own copies of urllib3 2.7.0, msgpack 1.1.2 and
+  `pkg_resources` from setuptools 70.3.0 (`pip/_vendor`); scanners report them. They are used by
+  pip only and are accepted, with an expiry date, in `.trivyignore.yaml`.
 - Not scanned: the execution environment image (`quay.io/ansible/awx-ee`) and what the
   installer's `Dockerfile.awx` adds (it installs ansible-core 2.16, which is end of life).
+
+New advisories keep appearing. `.github/workflows/opteamax-image.yml` therefore scans the
+published image every day and rebuilds it every Monday; a fixable high or critical finding
+fails the run (and blocks publishing), which GitHub reports by mail.

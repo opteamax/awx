@@ -7,6 +7,9 @@
 # Builds the installer's Dockerfile.awx on top of both images, sets the stack up with the old
 # one the way bootstrap_awx.py does, runs a project sync, a job and an ad hoc command, then
 # switches to the new image, migrates and checks old data and new jobs.
+#
+# SWAP_SCRIPT=<path> switches with that script instead (a deployment's own upgrade script that
+# reads the pending.env written by swap() below) and requires it to report "done".
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 OLD=$1; NEW=$2; INSTALLER=$(cd "$3" && pwd); KEEP=${4:-}
@@ -70,6 +73,31 @@ ensure_queues() {
   echo "could not register queues"; return 1
 }
 
+# The production switch, run against this stack: compose override in $HERE, status in $STATE/swap.
+swap() {
+  local dir=$STATE/swap rc
+  mkdir -p "$dir"
+  printf 'services:\n  awx_web:\n    image: awx-e2e-podman:new\n  awx_task:\n    image: awx-e2e-podman:new\n  receptor:\n    image: awx-e2e-podman:new\n' \
+    > "$dir/override.new.yml"
+  {
+    echo "STATE_DIR=$dir"
+    echo "COMPOSE_DIR=$HERE"
+    echo "NEW_IMAGE=awx-e2e-podman:new"
+    echo "OLD_IMAGE=awx-e2e-podman:old"
+    echo "SNAP=e2e-swap"
+    echo "FROM_VERSION=$(curl -sf "http://127.0.0.1:$AWX_PORT/api/v2/ping/" | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')"
+    echo "TO_VERSION=$(docker run --rm --entrypoint /var/lib/awx/venv/awx/bin/python3 awx-e2e-podman:new -c 'import awx; print(awx.__version__)')"
+    echo "AWX_PORT=$AWX_PORT"
+    echo "PROJECT_ID=$1"
+    echo "WAIT_IDLE_MIN=5"
+    echo "WEB=awx_e2e_web TASK=awx_e2e_task RECEPTOR=awx_e2e_receptor PG=awx_e2e_postgres"
+  } > "$dir/pending.env"
+  rc=0; bash "$SWAP_SCRIPT" "$dir/pending.env" || rc=$?
+  rm -f "$HERE/docker-compose.override.yml"
+  echo "swap: rc=$rc $(cat "$dir/status.json")"
+  grep -q '"state": "done"' "$dir/status.json"
+}
+
 collect_logs() {
   mkdir -p "$STATE/logs"
   for c in awx_e2e_web awx_e2e_task awx_e2e_receptor awx_e2e_rsyslog; do docker logs "$c" > "$STATE/logs/$1-$c.log" 2>&1 || true; done
@@ -99,9 +127,15 @@ e2e logging || rc=1
 collect_logs old
 
 echo "### phase 2: $NEW"
-export AWX_IMAGE=awx-e2e-podman:new
-compose up -d
-wait_exec && web awx-manage migrate --noinput | tail -1
+if [ -n "${SWAP_SCRIPT:-}" ]; then
+  swap "$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["project"])' "$STATE/state.json")" \
+    || { collect_logs new; exit 1; }
+  export AWX_IMAGE=awx-e2e-podman:new
+else
+  export AWX_IMAGE=awx-e2e-podman:new
+  compose up -d
+  wait_exec && web awx-manage migrate --noinput | tail -1
+fi
 wait_web || { collect_logs new; exit 1; }
 echo "unapplied migrations: $(web awx-manage showmigrations --plan | grep -c '\[ \]' || true)"
 ensure_queues

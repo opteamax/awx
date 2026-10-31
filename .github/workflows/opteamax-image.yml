@@ -1,0 +1,145 @@
+---
+# Opteamax fork: build, scan and publish the AWX image (see OPTEAMAX-FORK.md).
+#
+#   push to django5/24.6.1   build, scan, publish
+#   Monday 03:00 UTC          rebuild with the latest AlmaLinux packages, scan, publish
+#   daily 05:00 UTC           scan the published image against the latest advisories
+#   workflow_dispatch         build, scan, publish
+#
+# The image is only published when the scan finds no fixable HIGH/CRITICAL
+# vulnerability that is not accepted in .trivyignore.yaml. A failed run is the
+# notification: GitHub mails it to the people watching the repository.
+#
+# Tags: ghcr.io/opteamax/awx:24.6.1-django5 (moving) and
+#       ghcr.io/opteamax/awx:24.6.1-django5-<YYYYMMDD>-<sha> (one per build).
+# Scheduled runs only happen on the default branch, so the fork's default branch
+# is django5/24.6.1.
+name: Opteamax image
+
+on:
+  push:
+    branches:
+      - django5/24.6.1
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  schedule:
+    - cron: '0 3 * * 1'
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opteamax-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/opteamax/awx
+  TAG: 24.6.1-django5
+  VERSION: 24.6.1+opteamax.django5
+  TRIVY_IMAGE: aquasec/trivy:0.76.1
+  # HIGH/CRITICAL with a fix available fail the run; the rest is reported only.
+  TRIVY_GATE: --table-mode detailed --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore.yaml --exit-code 1
+
+jobs:
+  build:
+    if: github.event_name != 'schedule' || github.event.schedule == '0 3 * * 1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: django5/24.6.1
+          # tools/scripts/scm_version.py and setuptools_scm want the tags
+          fetch-depth: 0
+
+      - name: Free disk space for the build
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Install the Dockerfile renderer
+        run: python3 -m pip install --user 'ansible-core>=2.16,<2.18'
+
+      - name: Build the image
+        run: |
+          stamp=$(date -u +%Y%m%d)-$(git rev-parse --short=7 HEAD)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          make awx-kube-build VERSION="$VERSION" IMAGE_KUBE="$IMAGE:$TAG-$stamp" \
+            DOCKER_KUBE_CACHE_FLAG="--progress plain --label org.opencontainers.image.source=https://github.com/${{ github.repository }} --label org.opencontainers.image.revision=${{ github.sha }} --label org.opencontainers.image.version=$TAG-$stamp"
+
+      - name: Scan (report)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --format sarif --output trivy.sarif "$IMAGE:$TAG-$STAMP"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --format table "$IMAGE:$TAG-$STAMP" | tee trivy.txt
+
+      - name: Upload the scan to code scanning
+        if: always() && hashFiles('trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: image
+
+      - name: Scan (gate)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln $TRIVY_GATE "$IMAGE:$TAG-$STAMP"
+
+      - name: Publish
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag "$IMAGE:$TAG-$STAMP" "$IMAGE:$TAG"
+          docker push "$IMAGE:$TAG-$STAMP"
+          docker push "$IMAGE:$TAG"
+          digest=$(docker image inspect "$IMAGE:$TAG-$STAMP" --format '{{index .RepoDigests 0}}')
+          {
+            echo "### Published"
+            echo
+            echo "- \`$IMAGE:$TAG-$STAMP\`"
+            echo "- \`$IMAGE:$TAG\`"
+            echo "- \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy
+          path: trivy.*
+
+  scan:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 5 * * *'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: django5/24.6.1
+
+      - name: Scan the published image (report)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --format sarif --output trivy.sarif "$IMAGE:$TAG"
+          docker run --rm -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --format table "$IMAGE:$TAG" | tee trivy.txt
+
+      - name: Upload the scan to code scanning
+        if: always() && hashFiles('trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: image
+
+      - name: Scan the published image (gate)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln $TRIVY_GATE "$IMAGE:$TAG"
