@@ -59,6 +59,10 @@ readable; `tools/django5-tests/django5-tests.sh upgrade-check 24.6.1` verifies t
   (account not found, account inactive) are unchanged.
 - **API validation errors** of list serializers keep the 24.6.1 list format
   (`LIST_SERIALIZER_ERRORS_AS_DICT = False`; DRF 3.18 changed the default to a dict).
+- **rsa stays installed**: upstream uninstalls `rsa` after installing the requirements
+  (`requirements_tower_uninstall.txt`), so `pip check` in the 24.6.1 image fails on google-auth.
+  The fork keeps the pinned `rsa` and `pip check` passes. google-auth still signs with
+  `cryptography`; `rsa` is not used at runtime.
 
 ## Building
 
