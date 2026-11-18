@@ -6,6 +6,7 @@ Usage: e2e.py seed|verify STATE_FILE
 """
 import base64
 import json
+import os
 import sys
 import time
 
@@ -105,7 +106,10 @@ def seed(state_file):
 def verify(state_file):
     state = json.load(open(state_file))
     ping = api('GET', '/ping/')
-    check('ping after upgrade', ping.get('version') and ping['version'] != state['version'], f"{state['version']} -> {ping.get('version')}")
+    # EXPECT_VERSION is the new image's version; a rebuild of the same release keeps it
+    expected = os.environ.get('EXPECT_VERSION')
+    ok = ping.get('version') == expected if expected else ping.get('version') and ping['version'] != state['version']
+    check('ping after upgrade', ok, f"{state['version']} -> {ping.get('version')}")
     # Capacity is recalculated by the next node heartbeat after the restart
     start = time.time()
     while not any(g['name'] == 'controlplane' and g['capacity'] > 0 for g in ping['instance_groups']) and time.time() - start < 180:

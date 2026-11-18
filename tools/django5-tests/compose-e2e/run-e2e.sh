@@ -20,7 +20,7 @@ cd "$HERE"
 
 compose() { docker compose -f "$HERE/docker-compose.yml" "$@"; }
 web() { docker exec awx_e2e_web "$@"; }
-e2e() { docker run --rm --network host -v "$HERE:/e2e:ro" -v "$STATE:/state" "$TOOLS_IMAGE" python /e2e/e2e.py "$1" /state/state.json; }
+e2e() { docker run --rm --network host -e EXPECT_VERSION -v "$HERE:/e2e:ro" -v "$STATE:/state" "$TOOLS_IMAGE" python /e2e/e2e.py "$1" /state/state.json; }
 PLAYWRIGHT_IMAGE=awx-e2e-playwright
 ui() { docker run --rm --network host --ipc host -v "$HERE:/e2e:ro" -v "$STATE:/state" "$PLAYWRIGHT_IMAGE" python /e2e/ui_check.py /state/state.json; }
 
@@ -111,6 +111,8 @@ export COMPOSE_PROFILES=logging
 docker build --network host -q -f "$HERE/ui.Dockerfile" -t "$PLAYWRIGHT_IMAGE" "$HERE" >/dev/null
 build "$OLD" awx-e2e-podman:old
 build "$NEW" awx-e2e-podman:new
+EXPECT_VERSION=$(docker run --rm --entrypoint /var/lib/awx/venv/awx/bin/python3 awx-e2e-podman:new -c 'import awx; print(awx.__version__)')
+export EXPECT_VERSION
 compose down -v >/dev/null 2>&1 || true
 
 echo "### phase 1: $OLD"
