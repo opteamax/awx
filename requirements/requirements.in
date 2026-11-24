@@ -68,7 +68,7 @@ twisted[tls]>=26.10.0  # CVE-2023-46137, CVE-2024-41671, CVE-2024-41810, CVE-202
 uWSGI
 uwsgitop
 wheel>=0.46.2  # CVE-2022-40898, CVE-2026-24049
-pip==26.2.2  # see UPGRADE BLOCKERs; CVE-2023-5752, CVE-2025-8869 and 2026 pip CVEs
+pip==26.3  # see UPGRADE BLOCKERs; CVE-2023-5752, CVE-2025-8869 and 2026 pip CVEs; 26.3 vendors urllib3 2.8.0 and msgpack 1.2.4
 setuptools>=84.2.1  # see UPGRADE BLOCKERs; CVE-2024-6345, CVE-2025-47273, CVE-2026-59890, GHSA-xmj3-9gf7-h52w (no pkg_resources since 82)
 setuptools_scm[toml]<10  # see UPGRADE BLOCKERs, xmlsec build dep
 setuptools-rust>=0.11.4  # cryptography build dep

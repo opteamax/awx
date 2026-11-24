@@ -115,9 +115,10 @@ deployments.
 - UI: the dependencies shipped to the browser have no known vulnerabilities (npm audit); the
   build tooling (react-scripts 5, webpack, ...) still has known issues and would need a
   larger migration. It does not end up in the image's runtime.
-- pip 26.2.2 (the latest release) carries its own copies of urllib3 2.7.0, msgpack 1.1.2 and
-  `pkg_resources` from setuptools 70.3.0 (`pip/_vendor`); scanners report them. They are used by
-  pip only and are accepted, with an expiry date, in `.trivyignore.yaml`.
+- pip 26.3 (the latest release) carries its own copy of `pkg_resources` from setuptools 70.3.0
+  (`pip/_vendor`); scanners report it as setuptools 70.3.0. The reported vulnerability is in
+  setuptools' `PackageIndex`, which pip does not include. It is accepted, with an expiry date,
+  in `.trivyignore.yaml`.
 - Not scanned: the execution environment image (`quay.io/ansible/awx-ee`) and what the
   installer's `Dockerfile.awx` adds (it installs ansible-core 2.16, which is end of life).
 
